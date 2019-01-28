@@ -1,2 +1,2 @@
-/nodebird/.env
-/nodebird/config/config.json
+nodebird/.env
+nodebird/config/config.json
