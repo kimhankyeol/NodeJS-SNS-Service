@@ -21,3 +21,110 @@ npm i sequelize mysql2를 호출하면 node_modules 폴더와 package-lock.json�
 뒤에서 설명할 passport 패키지를 위한 passport폴더도 만들어줌
 마지막으로 익스프레스 서버 코드가 담길 app.js를 nodebird 폴더안에 생성함
 <!-- 집에서는 346p 폴더까지만 생성 app.js 생성안함-->
+학교에서는 생성함 app.js 
+
+이렇게 까지 하고 폴더구조를 보면 Express-generator 가 생성해주는 기본 구조와 상당히 유사함
+이 구조는 고정된 구조가 아님 
+편의에 따라 바꿔도됨
+
+필요한 npm패키지들을 설치하고 app.js를 작성함
+템플릿 엔진 pug 사용
+
+npm i express cookie-parser express-session morgan connect-flash pug
+npm i -g nodemon
+npm i -D nodemon
+
+서버코드에 수정사항이 생길떄마다 매번 서버를 재시작 하기는 귀찮으므로 nodemon 모듈로 서버를 자동 재시작
+nodemon 은 개발용으로만 사용할 것을 권장함 
+배포후에는 서버 코드가 빈번하게 변경될일이 없으므로 nodemon을 사용하지 않아도 됨
+
+app.js 에서는 6장에서 배운 미들웨어 대부분 사용하고 있음
+이 프로젝트 콘솔에서는 bin/www 필요하지않음
+
+라우터로는 현재 pageRouter 만 있지만 추후에 더 추가 할 예정임
+라우터 이후에는 404 미들웨어와 에러 핸들링 미들웨어가 있음
+마지막 앱을 8001번 포트에 연결
+
+이제부터 cookieParser 와 express-session의 nodebirdsecret 같은 비밀키는 직접 하드 코딩하지 않음
+키를 하드코딩하면 소스코드가 유출되었을떄 키도 같이 유출되므로 별도로 관리해야됨
+이를 위한 패키지가 dotenv임 비밀키는 .env라는 파일에 모아두고 , dotenv가 .env 파일을 읽어 process.env 객체에 넣음
+
+npm i dotenv
+
+.env 파일을 생성함 
+파일명앞에 . 이 붙어있는것 주의 
+dotenv 패키지의 이름이 dot 점 + env 인 이유
+.env 파일에  키= 값 형식으로 비밀번호를 저장하면됨
+나중에 gitignore 에 .env 파일 따로 처리해서 안 올리면될듯
+
+app.js 에 require('dotenv').config(); 를 호출하면 됨
+서버시작시 .env의 비밀키들을 process.env에 넣으므로 이후에 process.env.COOKIE_SECRET처럼 키를 사용할 수 있음
+하드코딩된 비밀번호가 유일하게 남아 있는 파일이 있음
+시퀄라이즈 설정을 담아둔 config , json임  JSON파일이라 process.env를 사용할 수 없음
+시퀄라이즈의 비밀번호를 숨기는 방법은 15.1.2절에서 알아봄
+
+기본적인 라우터와 템플릿 엔진도 만들어봄
+routes 폴더 안에는 page.js views 폴더 안에는 layout.pug,main.pug,profile.pug,error.pug를 생성함
+약간의 디자인을 위해 main.css를 폴더 안에 생성함
+
+
+page.js 에서는
+//  /profile /join  /  까지 세개의 페이지로 구성 회원 가입과 로그인 시 에러 메시지를 보여주기 위해 /join 과 / 에는 flash 메시지가 연결되어 있음
+//render 메서드안의 twits와 user 는 각각 빈 배열 null 이지만 나중에 넣을것임
+
+그 다음은 클라이 언트 코드임 
+클라이언트는 상당히 길고 pug는 띄어쓰기 간격주의 해야됨 
+css pug 파일은 코드 복사하는게 좋음
+
+
+    //layout.pug
+     //-main.pug 가 block content 로 join.pug 도 content
+     //main.pug
+            //main.pug 에서는 user 변수가 존재할떄 게시글 업로드 폼을 보여줌 .
+            //for문도 추가 됨
+            //렌더링시 twits 배열안의 요소들을 읽어서 게시글로 만듬, 게시글 데이터를 나중에 twits 에 넣어주면됨
+            //   -const follow = user && user.Followings.map(f => f.id).includes(twit.user.id);  follow는 pug의 변수이고 사용자가 현재 게시글 작성자를 팔로잉 중인지를 담고 있음
+            //pug 변수임을 나타내기 위해 줄 제일 앞에 -를 붙여줌  이 변수는 다음줄 if 문에 사용됨
+            //렌더링된 HTML에는 표시 되지 않음
+
+
+9.2 데이터베이스 세팅하기
+
+MySQL 시퀄라이즈로 데이터베이스 설정함
+
+로그인 기능이 있으므로 사용자 테이블 필요하고 게시글을 저장할 게시글 테이블도 필요 
+해시태그를 사용하므로 해시 태그 테이블도 만들어야 됨
+models 에 테이블에 해당하는 파일들을 
+user.js  post.js hashtag.js 만듬
+게시글 모델 post 는  내용과 경로를 저장함 게시글 등록자의 아이디를 담은 컬럼은 나중에 관계를 설정할때 시퀄라이즈가 알아서 생성해줌
+해시태그 모델을 따로 두는 것은  나중에 태그로  검색하기 위해서임
+
+index.js 에 코드를 작성하고   .///참조하면됨
+
+그리고 아직 데이터 베이스를 만들지 않았으므로 데이터베이스로부터 만들겠음
+데이터베이스의 이름은 nodebird
+
+하지만 시퀄라이즈는 config.json을 읽어 데이터베이스를 생성해주는 기능이 있음
+따라서 config.json을 먼저 수정함 
+ "development": {
+    "username": "root",
+    "password": "admin",
+    "database": "nodebird",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  }
+MySQL 비밀번호를 password 에 넣고 데이터베이스 이름을 nodebird로 바꿈
+콘솔에서 sequelize db:create 명령어 입력하면 
+데이터베이스 생성됨
+
+그뒤 app.js 에 모델과 서버를 연결함
+
+const { sequelize } = require('./models');
+sequelize.sync();
+추가하면 
+서버쪽 세팅이 완료됨
+
+시퀄라이즈는 테이블 생성 쿼리문에 IF NOT EXISTS 를 넣어주므로 테이블이 없을떄 테이블을 자동으로 생성함
+
+데이터 베이스 세팅이 완료되었으므로 사용자 정보를 저장할수 있음
+이제 로그인을 구현해 보도록 하겠음
