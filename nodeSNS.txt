@@ -128,3 +128,96 @@ sequelize.sync();
 
 데이터 베이스 세팅이 완료되었으므로 사용자 정보를 저장할수 있음
 이제 로그인을 구현해 보도록 하겠음
+//////////////////////////////////////////
+//9.3 Passport 모듈로 로그인 구현하기 // 집
+
+SNS 서비스 이므로 로그인이 필요하고회원가입과 로그인은 직접 구현할수도 있지만 세션과 쿠키처리 복잡한 작업이 많으므로 검증된 모듈을 사용하는 것이 좋음 
+바로 Passport 를 사용하는 것 
+우리의 서비스를 사용할 수 있게 해주는 여권 역할
+기존 로그인 하고 SNS 로그인도 Passport 로 할수 있음
+
+에러뜨면 //이거 마지막용
+npm install --global --production windows-build-tools
+안되면 따로 따로 설치 
+npm install --save bcrypt@3.0.2
+먼저 Passport 관련패키지 설치
+npm i passport passport-local passport-kakao bcrypt
+
+설치후 Passport모듈을 미리 app.js 연결함
+연결하고 app.js 와 Passport 모듈 작성
+
+9.3.1 로컬 로그인 구현하기
+로컬로그인 이란 다른 SNS 서비스를 통해 로그인 하지 않고 자체적으로  회원가입후 로그인하는것
+이를 구현하려면 passport-local 이 필요함
+이미 설치 했으므로 로컬 로그인 전략만 세우면 됨
+로그인에만 해당하는 전략이므로 회원가입을 따로 만들어야됨
+
+회원가입 , 로그인 , 로그 아웃  라우터를 만들어야됨 
+이러한 라우터는 접근 조건이 있음
+로그인한 사용자는 회원가입과 로그인 라우터에 접근하면 안됨
+이미 로그인을 했기 떄문임
+마찬가지로 로그인하지 않은 사용자는 로그아웃 라우터에 접근하면 안됨
+라우터에 접근 권한을 제어하는 미들웨어가 필요함
+미들웨어를 만들며 Passport가 req 객체에 추가해주는 isAuthenticated 메서드를 알아봄
+routes/middleswares.js
+routes/page.js
+만들고 회원가입 로그인 로그아웃 라우터 작성
+routes/auth.js
+
+나중에 app.js 와 연결할떄 /auth 접두사를 붙일것이므로 라우터의 주소는 각각 /auth/join,/auth/login,/auth/logout 이 됨
+
+passport/localStrategy.js 로그인 전략 구현
+kakoStrategy 로그인 구현
+
+그 다음 카카오 로그인 라우터를 만듬
+routes/auth.js
+
+추가한 auth 라우터를 app.js에 연결함
+
+하고 kakoStrategy clientID를 발급받아야함
+
+
+
+9.4 Multer 모듈로 이미지 업로드 구현하기
+SNS서비스인 만큼 이미지 업로드도 중요함
+이미지는 보통 input[type=file] 태그와 form 태그를 통해서 업로드함
+이떄 form 인코딩 타입은 multipart/form-data 인 경우가 많음
+이런 형식으로 올라온 데이터는 직접 처리하기 힘드므로 multipart 처리용 모듈을 사용하는 것이 좋음
+대표적 Multer
+
+현재 NodeBird 도 게시글 작성 폼의 enctype multipart/form-data로 되어 있음
+이를 통해 올라오는 데이터를 처리하려면 Multer가 필요함 
+모듈설치
+npm i multer
+
+이미지를 어떻게 저장할것인지는 서비스의 특성에 따라 달라짐
+
+NodeBird input 태그를 통해 이미지를 선택할때 먼저 업로드를 진행하고 업로드된 사진 주소를 다시 클라이언트에 알려줄것임
+게시글 저장 시에는 이미지 데이터 대신 이미지 주소를 저장함 
+그럼 post 라우터를 작성해보겠음
+
+//실제 서버 운영시
+현재 multer 모듈은 이미지를 서버 디스크에 저장함
+디스크 저장은 간단하지만 서버에 문제가 생겼을떄 이미지가 제공되지 않거나 날라갈수 있음
+따라서 AWS S3나 cloud 같은 정적파일 서비스를 사용하여 이미지를 따로 저장하고 제공하는 것이 좋음
+이러한 서비스를 사용하고 싶다면 multer-s3나 multer-google-storage 같은 모듈을 찾아보면됨
+이에 대해서는 뒤에서 알아봄
+게시글 작성기능이 추가되었으므로 이제부터 메인 페이지 로딩시 메인페이지와 게시글을 함께 로딩하도록 하겠음
+routes/page.js
+
+9.5 프로젝트 마무리
+이미지 업로드 했으니 이제 해시태그 검색 기능과 팔로잉 추가되었으므로
+routes/post.js
+routes/user.js
+passport/index.js
+include:[
+      {model:User,attributes:['id','nick'],as:'Followers'},
+      {model:User,attributes:['id','nick'],as:'Followings'}
+      ]
+      이부분을 User.Find 부분에 추가되었으므로
+
+마지막으로routes/post.js   routes/user.js 부분을 app.js 연결함
+업로드한 이미지를 제공할 라우터(/img) 도 express.static 미들웨어로 uploads 폴더와 연결함
+express.static 을 여러번 쓸수 있는 사실을 알아야함
+이제 uploads폴더내 사진들이 /img 주소로 제공됨
+
